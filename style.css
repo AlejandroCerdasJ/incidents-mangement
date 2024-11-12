@@ -1,0 +1,8 @@
+aside{
+    justify-content: flex-start;
+    width: 300px;
+    background-color: black;
+    padding: 20px;
+    border-color: white;
+    border-radius: 15px;
+}    
