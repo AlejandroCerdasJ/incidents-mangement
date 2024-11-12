@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
             summary: "Lost the connection",
             impactedServices: "Web page",
             status: "Open",
-            date: "Today"
+            date: "9/11/2024"
         },
         {
             id: 2,
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
             summary: "The server is responding slowly",
             impactedServices: "Database",
             status: "Open",
-            date: "Yesterday"
+            date: "10/11/2024"
         }
     ];
 
@@ -28,14 +28,15 @@ document.addEventListener('DOMContentLoaded', function() {
             incidentCard.className = 'd-flex flex-column mb-2';
             incidentCard.innerHTML = `
                 <div class="card">
-                    <div class="card-body row row-cols-4">
-                        <div class="col-sm-1 badge text-bg-secondary "><p class="card-text ">#${incident.id}</p></div>
-                        <div class="col"><p class="card-text">${incident.priority}</p></div>
-                        <div class="col"><h5 class="card-title">${incident.definition}</h5></div>
-                        <div class="col-sm-1 badge text-bg-info" bg-><p class="card-text ">${incident.status}</p></div>
-                        <div class="col"><p class="card-text">${incident.summary}</p></div>
-                        <div class="col"><p class="card-text">${incident.impactedServices}</p></div>
-                        <div class="col"><p class="card-text"><small class="text-muted">Date: ${incident.date}</small></p></div>
+                    <div class="card-body row pb-0 ">
+                        <div class="col-sm-1 m-1 badge text-bg-secondary "><p class="card-text ">#${incident.id}</p></div>
+                        <div class="col-sm-2"><p class="card-text">${incident.priority}</p></div>
+                        <div class="col-sm-7"><h5 class="card-title">${incident.definition}</h5></div>
+                        <div class="col-sm-1 m-1 badge text-bg-info "><p class="card-text ">${incident.status}</p></div>
+                    </div>
+                    <div class="card-body row p-1">   
+                        <div class="col-sm-6"><p class="card-text">${incident.impactedServices}</p></div>
+                        <div class="col-sm-6 d-flex justify-content-end"><p class="card-text"><small class="text-muted">Date: ${incident.date}</small></p></div>
                     </div>
                 </div>
             `;
