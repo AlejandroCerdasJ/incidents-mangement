@@ -27,12 +27,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const incidentCard = document.createElement('div');
             incidentCard.className = 'd-flex flex-column mb-2';
             incidentCard.innerHTML = `
-                <div class="card">
-                    <div class="card-body row pb-0 ">
+                <div class="card mb-3">
+                    <div class="card-body row pb-0">
                         <div class="col-sm-1 m-1 badge text-bg-secondary "><p class="card-text ">#${incident.id}</p></div>
-                        <div class="col-sm-2"><p class="card-text">${incident.priority}</p></div>
+                        <div class="col-sm-2"><p class="card-text"><span class="fw-bold badge bg-danger">${incident.priority}</span></p></div>
                         <div class="col-sm-7"><h5 class="card-title">${incident.definition}</h5></div>
-                        <div class="col-sm-1 m-1 badge text-bg-info "><p class="card-text ">${incident.status}</p></div>
+                        <div class="col-sm-1 m-1 badge text-bg-info "><p class="card-text">${incident.status}</p></div>
                     </div>
                     <div class="card-body row p-1">   
                         <div class="col-sm-6"><p class="card-text">${incident.impactedServices}</p></div>

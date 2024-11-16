@@ -1,7 +1,56 @@
-aside{
+:root {
+    --bs-primary: #0d6efd;
+    --bs-secondary: #6c757d;
+    --bs-success: #198754;
+    --bs-danger: #dc3545;
+    --bs-warning: #ffc107;
+    --bs-info: #0dcaf0;
+    --bs-light: #f8f9fa;
+    --bs-dark: #212529;
+}
+
+
+.aside {
     float: left;
     width: 300px;
     background-color: black;
-    padding: 20px;
-    border-radius: 15px;
-}    
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.modal-content {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+#incident-list {
+    gap: 16px;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: scale(1.05);
+}
+
+
+.nav-link {
+    transition: all 0.3s ease; 
+}
+.nav-link:hover {
+    color: #0d6efd;  
+    text-decoration: underline; 
+    background-color: #0d6efd;
+}
+.navbar-toggler:hover {
+    background-color: #ff6347;  
+}
+
+@media (max-width: 992px) {  /* Pantallas de tamaño pequeño */
+    .navbar-toggler {
+        margin-top: 15px;  /* Espacio por encima del botón en pantallas pequeñas */
+    }
+}
+
