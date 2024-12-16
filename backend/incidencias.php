@@ -87,19 +87,28 @@ function crearIncidencia($id_usuario, $nombre, $descripcion,$id_status, $id_prio
     }
 }
 
-function editarIncidencia($id_usuario, $nombre, $descripcion, $id_status, $id_prioridad)
+function editarIncidencia($id_incidencias, $id_usuario, $nombre, $descripcion, $id_status, $id_prioridad)
 {
-    global $pdo;
+    global $pdo; // Asegúrate de tener $pdo disponible en el contexto global
     try {
-        $sql = "UPDATE incidencias set nombre = :nombre, descripcion = :descripcion, id_status = :id_status, id_prioridad = :id_prioridad WHERE id_usuario = :id_usuario AND id_incidencias = :id_incidencias";
+        $sql = "UPDATE incidencias 
+                SET nombre = :nombre, 
+                    descripcion = :descripcion, 
+                    id_status = :id_status, 
+                    id_prioridad = :id_prioridad 
+                WHERE id_usuario = :id_usuario AND id_incidencias = :id_incidencias";
+
         $stmt = $pdo->prepare($sql);
+
         $stmt->execute([
-            'id_usuario' => $id_usuario,
+            'id_incidencias' => $id_incidencias, 
+            'id_usuario' => $id_usuario,       
             'nombre' => $nombre,
             'descripcion' => $descripcion,
             'id_status' => $id_status,
             'id_prioridad' => $id_prioridad
         ]);
+
         $affected_rows = $stmt->rowCount();
         return $affected_rows > 0;
     } catch (\Throwable $th) {
@@ -143,7 +152,6 @@ if (isset($_SESSION['user_id'])) {
     $input = getJsonInput();
     switch ($method) {
         case 'POST':
-            
             if (isset($input['nombre'], $input['descripcion'], $input['id_status'], $input['id_prioridad'])) {
               
                 $id_incidencia = crearIncidencia($user_id, $input['nombre'], $input['descripcion'],  $input['id_status'], $input['id_prioridad']);
@@ -180,7 +188,7 @@ if (isset($_SESSION['user_id'])) {
             break;
         case 'PUT':
             if (isset($input['id_incidencias'], $input['nombre'], $input['descripcion'], $input['id_status'], $input['id_prioridad'])) {
-                $actualizado = editarIncidencia($input['id_incidencias'], $input['nombre'], $input['descripcion'],  $input['id_status'], $input['id_prioridad']);
+                $actualizado = editarIncidencia($input['id_incidencias'], $user_id, $input['nombre'], $input['descripcion'], $input['id_status'], $input['id_prioridad']);
                 if ($actualizado) {
                     http_response_code(200);
                     echo json_encode(['message' => 'Incidencia actualizada correctamente']);

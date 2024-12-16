@@ -29,7 +29,7 @@
 
                     <!-- Barra de navegación colapsable -->
                     <div class="collapse navbar-collapse" id="navbarNav">
-                        <ul class="navbar-nav ms-auto">
+                        <!-- <ul class="navbar-nav ms-auto">
                             <li class="nav-item">
                                 <a class="nav-link text-white" href="#">Home</a>
                             </li>
@@ -40,10 +40,10 @@
                                 <a class="nav-link text-white" href="#">Contact</a>
                             </li>
                             <li>
-                                <button class="btn btn-danger ms-3" onclick="window.location.href='index.html'">Log
-                                    out</button>
                             </li>
-                        </ul>
+                        </ul> -->
+                        <button class="btn btn-danger ms-3" onclick="window.location.href='index.html'">Log
+                            out</button>
                     </div>
                 </nav>
             </div>
@@ -62,88 +62,93 @@
             </button>
         </div>
 
-        <div class="row">
-
-            <!--Parte del filtro de busqueda-->
-            <div class="col-12 col-md-4 mb-4">
-                <aside class="aside p-3 mb-4 shadow-sm">
-                    <h4>Search Incident</h4>
-                    <div class="mb-3">
-                        <button class="btn btn-primary" data-bs-toggle="#" data-bs-target="#incidentModal">All</button>
+        <div class="container">
+            <div class="row">
+                <!--Parte del filtro de busqueda-->
+                <div class="col mb-4 border">
+                    <div class="row">
+                        <aside class="aside p-3 mb-4 shadow-sm">
+                            <h4>Search Incident</h4>
+                            <div class="mb-3">
+                                <button class="btn btn-primary" data-bs-toggle="#"
+                                    data-bs-target="#incidentModal">All</button>
+                            </div>
+                            <div class="mb-3">
+                                <h5>Status</h5>
+                                <select id="status-search">
+                                    <option value="open">Open</option>
+                                    <option value="close">Close</option>
+                                    <option value="resolved">Resolved</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="search-date" class="form-label">
+                                    <h5>Date</h5>
+                                </label>
+                                <input type="date" class="form-control" id="search-date">
+                            </div>
+                        </aside>
                     </div>
-                    <div class="mb-3">
-                        <h5>Status</h5>
-                        <select id="status-search">
-                            <option value="open">Open</option>
-                            <option value="close">Close</option>
-                            <option value="resolved">Resolved</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="search-date" class="form-label">
-                            <h5>Date</h5>
-                        </label>
-                        <input type="date" class="form-control" id="search-date">
-                    </div>
-                </aside>
-            </div>
-
-            <div class="col-12 col-md-8">
-                <div class="row" id="incident-list">
-                    <div class="col-12 col-md-6 col-lg-4 mb-4">
-                        <!-- Mostrar aqui las incidentes -->
+                     <!--Aqui se muestran los watchers y los responders-->
+                    <div class="col border p-3 shadow-sm mb-4 watchers">
+                        <h4>Incident Info</h4>
                     </div>
                 </div>
-            </div>
 
-        </div>
-        <!---- Modal -->
-        <div class="modal fade" id="incidentModal" tabindex="-1" aria-labelledby="incidentModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="incidentModalLabel">Add Incident</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="col  border">
+                    <div class="row" id="incident-list">
+                        <div class="col-12 col-md-6 col-lg-4 mb-4">
+                            <!-- Mostrar aqui las incidentes -->
+                        </div>
                     </div>
-                    <div class="modal-body">
-                        <form id="incident-form">
-                            <input type="hidden" id="incidence-id">
-                            <div class="mb-3">
-                                <label for="definition" class="form-label">Incident Name</label>
-                                <input type="text" class="form-control" id="name" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="priority" class="form-label">Priority</label>
-                                <div class="dropdown">
-                                    <button class="btn btn-primary dropdown-toggle w-100" type="button"
-                                        id="priorityDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                        Select Priority
-                                    </button>
-                                    <ul class="dropdown-menu w-100" aria-labelledby="priorityDropdown">
-                                        <!-- Aquí las prioridades se cargarán dinámicamente -->
-                                    </ul>
-                                </div>
-                            </div>
+                </div>
 
-                            <div class="mb-3">
-                                <label for="summary" class="form-label">Description</label>
-                                <textarea class="form-control" id="description" rows="3"></textarea>
-                            </div>
-                            <!-- <div class="mb-3">
-                                <label for="impacted-services" class="form-label">Impacted Services</label>
-                                <select id="impacted-services">
-                                    <option value="#">##</option>
-                                    <option value="#">##</option>
-                                    <option value="#">##</option>
-                                </select>
-                            </div> -->
-                            <div class="d-flex justify-content-between">
-                                <button type="submit" class="btn btn-primary px-4">Save</button>
-                                <button type="button" class="btn btn-outline-secondary px-4"
-                                    data-bs-dismiss="modal">Cancel</button>
-                            </div>
-                        </form>
+                  <!--Aqui va el timeline-->
+                <div class="col border p-3 shadow-sm mb-4 timeline">  
+                    <h4>Timeline</h4>
+                </div>
+
+            </div>
+            <!---- Modal -->
+            <div class="modal fade" id="incidentModal" tabindex="-1" aria-labelledby="incidentModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="incidentModalLabel">Add Incident</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="incident-form">
+                                <input type="hidden" id="incidence-id">
+                                <div class="mb-3">
+                                    <label for="definition" class="form-label">Incident Name</label>
+                                    <input type="text" class="form-control" id="name" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="priority" class="form-label">Priority</label>
+                                    <div class="dropdown">
+                                        <button class="btn btn-primary dropdown-toggle w-100" type="button"
+                                            id="priorityDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Select Priority
+                                        </button>
+                                        <ul class="dropdown-menu w-100" aria-labelledby="priorityDropdown">
+                                            <!-- Aquí las prioridades se cargarán dinámicamente -->
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="summary" class="form-label">Description</label>
+                                    <textarea class="form-control" id="description" rows="3"></textarea>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-primary px-4">Save</button>
+                                    <button type="button" class="btn btn-outline-secondary px-4"
+                                        data-bs-dismiss="modal">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
