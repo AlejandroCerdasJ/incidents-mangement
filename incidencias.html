@@ -29,19 +29,6 @@
 
                     <!-- Barra de navegación colapsable -->
                     <div class="collapse navbar-collapse" id="navbarNav">
-                        <!-- <ul class="navbar-nav ms-auto">
-                            <li class="nav-item">
-                                <a class="nav-link text-white" href="#">Home</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-white" href="#">About</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-white" href="#">Contact</a>
-                            </li>
-                            <li>
-                            </li>
-                        </ul> -->
                         <button class="btn btn-danger ms-3" onclick="window.location.href='index.html'">Log
                             out</button>
                     </div>
@@ -157,7 +144,111 @@
                     </div>
                 </div>
             </div>
+
+            <!--- Modal Para Watchers -->
+            <div class="modal fade" id="watcherModal" tabindex="-1" aria-labelledby="watcherModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog modal-sm">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="watcherModalLabel">Add Watcher</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="watcher-form">
+                                <input type="hidden" id="watcher-id">
+                                <div class="row">
+                                    <div class="mb-3 col">
+                                        <div class="dropdown position-relative">
+                                            <button class="btn btn-info btn-sm dropdown-toggle" type="button"
+                                                id="dropdownWatcherButton" data-bs-toggle="dropdown"
+                                                aria-expanded="false">Select Watcher
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-status position-absolute"
+                                                style="z-index: 1050;" aria-labelledby="dropdownWatcherButton">
+                                                <!-- Aqui se cargarán dinamicamente -->
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3 col">
+                                        <div class="dropdown position-relative">
+                                            <button class="btn btn-info btn-sm dropdown-toggle" type="button"
+                                                id="dropdownWatcherButton" data-bs-toggle="dropdown"
+                                                aria-expanded="false">Select a Role
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-status position-absolute"
+                                                style="z-index: 1050;" aria-labelledby="dropdownWatcherButton">
+                                                <!-- Itera sobre el arreglo de status y crea las opciones -->
+
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary px-4">Save</button>
+                            <button type="button" class="btn btn-outline-secondary px-4"
+                                data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <!--- Modal Para Responders -->
+        <div class="modal fade" id="responderModal" tabindex="-1" aria-labelledby="responderModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="responderModalLabel">Add Responder</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="responder-form">
+                            <input type="hidden" id="responder-id">
+                            <div class="row">
+                                <div class="mb-3 col-6">
+                                    <div class="dropdown position-relative">
+                                        <button class="btn btn-info btn-sm dropdown-toggle" type="button"
+                                            id="dropdownResponderButton" data-bs-toggle="dropdown"
+                                            aria-expanded="false">Select Responder
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-status position-absolute"
+                                            style="z-index: 1050;" aria-labelledby="dropdownResponderButton">
+                                            <!-- Aqui se cargarán dinamicamente -->
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="mb-3 col">
+                                    <div class="dropdown position-relative">
+                                        <button class="btn btn-info btn-sm dropdown-toggle" type="button"
+                                            id="dropdownResponderButton" data-bs-toggle="dropdown"
+                                            aria-expanded="false">Select a Role
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-status position-absolute"
+                                            style="z-index: 1050;" aria-labelledby="dropdownrButton">
+                                            <!-- Itera sobre el arreglo de status y crea las opciones -->
+
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-primary px-4">Save</button>
+                        <button type="button" class="btn btn-outline-secondary px-4"
+                            data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    </div>
 
 
     </div>

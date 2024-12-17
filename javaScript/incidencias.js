@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             if (response.ok) {
                 const data = await response.json();
+                console.log(data);
                 watchers = data.watchers;
                 responders = data.responder
             } else {
@@ -72,11 +73,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderWatchersResponders(incidentId) {
         console.log(incidentId);
         const infoList = document.getElementById('info-list');
-        infoList.innerHTML = '';    
+        infoList.innerHTML = '';
         const incident = incidents.find(incident => incident.id_incidencias === parseInt(incidentId));
-        console.log(incident);
-        const watcher = watchers.find(watcher => watcher.id_incidencias === incident.id_incidencias)?.id_usuario || 'None';
-        const responder = responders.find(responder => responder.id_incidencias === incident.id_incidencias)?.id_usuario || 'None';
+        const watcher = watchers.find(watcher => watcher.id_incidencia === incident.id_incidencias) || 'None';
+        const responder = responders.find(responder => responder.id_incidencia === incident.id_incidencias) || 'None';
+        const watcherUserName = usuarios.find(usuario => usuario.id_usuario === watcher.id_usuario)?.userName || 'Desconocido';
+        const responderUserName = usuarios.find(usuario => usuario.id_usuario === responder.id_usuario)?.userName || 'Desconocido';
+        console.log(watcher.id_usuario, responder.id_usuario);
         if (incident) {
             const incidentCard = document.createElement('div');
             incidentCard.className = 'd-flex flex-column mb-2';
@@ -90,14 +93,63 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="row">
                         <div class="col">
                             <h5 class="card-title">Watchers</h5>
-                                <ul class="list-group">
-                                    ${watcher}
-                                </ul>
-                        </div>
+
+                             <div class="d-flex justify-content-center mb-4">
+                                <button class="btn btn-sm btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
+                                    data-bs-target="#watcherModal">
+                                    <i class="bi bi-plus-circle"></i>
+                                    Add Watcher
+                                    </button>
+                                </div>
+
+                                <div class="dropdown position-relative">
+                                    <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownWatcherButton"         data-bs-toggle="dropdown" aria-expanded="false">Add Watcher
+                                    </button>
+                                        <ul class="dropdown-menu dropdown-status position-absolute" style="z-index: 1050;" aria-labelledby="dropdownWatcherButton">
+                                         <!-- Itera sobre el arreglo de status y crea las opciones -->
+                                         ${usuarios.map(item => `
+                                            <li>
+                                                <a class="dropdown-item usuario-watcher" href="#" data-id="${item.id_usuario}" 
+                                                incident-id="${incident.id_incidencias}">
+                                                ${item.userName}
+                                                </a>
+                                            </li>
+                                             `).join('')}
+                                        </ul>
+                                </div>
+                                    <ul class="list-group">
+                                       ${watcherUserName}
+                                    </ul>
+                                </div>
+                            
                         <div class="col">
                             <h5 class="card-title">Responders</h5>
+
+                             <div class="d-flex justify-content-center mb-4">
+                                <button class="btn btn-sm btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
+                                    data-bs-target="#responderModal">
+                                    <i class="bi bi-plus-circle"></i>
+                                    Add Responder
+                                    </button>
+                                </div>
+
+                            <div class="dropdown position-relative">
+                                    <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownResponderButton"         data-bs-toggle="dropdown" aria-expanded="false">Add Responder
+                                    </button>
+                                        <ul class="dropdown-menu dropdown-status position-absolute" style="z-index: 1050;" aria-labelledby="dropdownResponderButton">
+                                         <!-- Itera sobre el arreglo de status y crea las opciones -->
+                                         ${usuarios.map(item => `
+                                            <li>
+                                                <a class="dropdown-item usuario-responder" href="#" data-id="${item.id_usuario}"
+                                                incident-id="${incident.id_incidencias}">
+                                                ${item.userName}
+                                                </a>
+                                            </li>
+                                             `).join('')}
+                                        </ul>
+                                </div>
                                 <ul class="list-group">
-                                    ${responder}
+                                    ${responderUserName}
                                 </ul>
                         </div>
                     </div>
@@ -262,11 +314,74 @@ document.addEventListener('DOMContentLoaded', function () {
         loadIncidents();
     })
 
+
+
     document.getElementById('incident-list').addEventListener('click', async function (event) {
         const incidentElement = event.target.closest('[data-id]');
         const incidentId = incidentElement.getAttribute('data-id');
         renderWatchersResponders(incidentId);
     });
+
+    //Evento que guarda los watchers en la db
+    document.getElementById('info-list').addEventListener('click', async function (event) {
+        if (event.target && event.target.matches('.usuario-watcher')) {
+            const watcherId = parseInt(event.target.dataset.id);
+            const incidentId = parseInt(event.target.getAttribute('incident-id'));
+            console.log(watcherId, incidentId);
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id_incidencias: incidentId,
+                        id_usuario: watcherId,
+                        action: 'watcher'
+                    }),
+                    credentials: 'include'
+                })
+                if (!response.ok) {
+                    console.error('Error:', response.status);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        loadWatchersResponders();
+    })
+
+    //Evento que guarda los responders en la db
+    document.getElementById('info-list').addEventListener('click', async function (event) {
+        if (event.target && event.target.matches('.usuario-responder')) {
+            const responderId = parseInt(event.target.dataset.id);
+            const incidentId = parseInt(event.target.getAttribute('incident-id'));
+            console.log(responderId, incidentId);
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id_incidencias: incidentId,
+                        id_usuario: responderId,
+                        action: 'responder'
+                    }),
+                    credentials: 'include'
+                })
+                if (!response.ok) {
+                    console.error('Error:', response.status);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        loadWatchersResponders();
+    })
+
 
     //Evento que se dispara cuando para actualizar el estado de una incidencia
     document.getElementById('incident-list').addEventListener('click', async function (event) {

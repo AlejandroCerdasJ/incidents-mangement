@@ -28,13 +28,13 @@ function obtenerResponder($id_incidencias = null)
     global $pdo;
     try {
         if ($id_incidencias) {
-            $sql = "SELECT * FROM ResponderPorIncidencia WHERE id_incidencias = :id_incidencias";
+            $sql = "SELECT * FROM RespondersPorIncidencia WHERE id_incidencias = :id_incidencias";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
                 'id_incidencias' => $id_incidencias,
             ]);
         } else {
-            $sql = "SELECT * FROM ResponderPorIncidencia";
+            $sql = "SELECT * FROM RespondersPorIncidencia";
             $stmt = $pdo->query($sql);
         }
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -128,17 +128,18 @@ function crearIncidencia($id_usuario, $nombre, $descripcion, $id_status, $id_pri
     }
 }
 
-function insertarWatcher($id_incidencias, $id_usuario)
+function insertarWatcher($id_incidencia, $id_usuario)
 {
 
     global $pdo;
     try {
-        $sql = "INSERT INTO WatchersPorIncidencia (id_incidencias, id_usuario) VALUES (:id_incidencias, :id_usuario)";
+        $sql = "INSERT INTO watchersporincidencia (id_incidencia, id_usuario) VALUES (:id_incidencia, :id_usuario)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            'id_incidencias' => $id_incidencias,
+            'id_incidencia' => $id_incidencia,
             'id_usuario' => $id_usuario
         ]);
+        
         return $stmt->rowCount() > 0;
     } catch (\Throwable $th) {
         logError("Error al insertar watcher: " . $th->getMessage());
@@ -146,14 +147,14 @@ function insertarWatcher($id_incidencias, $id_usuario)
     }
 }
 
-function insertarResponder($id_incidencias, $id_usuario)
+function insertarResponder($id_incidencia, $id_usuario)
 {
     global $pdo;
     try {
-        $sql = "INSERT INTO ResponderPorIncidencia (id_incidencias, id_usuario) VALUES (:id_incidencias, :id_usuario)";
+        $sql = "INSERT INTO respondersporincidencia (id_incidencia, id_usuario) VALUES (:id_incidencia, :id_usuario)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            'id_incidencias' => $id_incidencias,
+            'id_incidencia' => $id_incidencia,
             'id_usuario' => $id_usuario
         ]);
         return $stmt->rowCount() > 0;
@@ -211,6 +212,13 @@ function eliminarIncidencia($id_incidencia)
     }
 }
 
+function sendResponse($statusCode, $message)
+{
+    http_response_code($statusCode);
+    echo json_encode(['message' => $message]);
+    exit;
+}
+
 
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -224,25 +232,38 @@ session_start();
 if (isset($_SESSION['user_id'])) {
 
     $user_id = $_SESSION['user_id'];
-    logDebug("Usuario logeado: $user_id");
+    logDebug("Usuario loggeado: $user_id");
     $input = getJsonInput();
     switch ($method) {
         case 'POST':
             if (isset($input['nombre'], $input['descripcion'], $input['id_status'], $input['id_prioridad'])) {
-
                 $id_incidencia = crearIncidencia($user_id, $input['nombre'], $input['descripcion'], $input['id_status'], $input['id_prioridad']);
                 if ($id_incidencia > 0) {
-
-                    http_response_code(201);
-                    echo json_encode(['id_incidencia' => $id_incidencia]);
+                    sendResponse(201, ['id_incidencia' => $id_incidencia]);
                 } else {
+                    sendResponse(500, 'Error al crear incidencia');
+                }
+            } elseif (isset($input['id_incidencias'], $input['id_usuario'], $input['action'])) {
+                $id_incidenciaWR = $input['id_incidencias'];
+                $id_usuarioWR = $input['id_usuario'];
+                $action = $input['action'];
 
-                    http_response_code(500);
-                    echo json_encode(['message' => 'Error al crear incidencia']);
+                error_log("id_incidencia: $id_incidenciaWR, id_usuario: $id_usuarioWR, action: $action");
+
+                if ($action === 'watcher') {
+                    $insertW = insertarWatcher($id_incidenciaWR, $id_usuarioWR);
+                    $insertW ? sendResponse(201, 'Watcher insertado correctamente')
+                        : sendResponse(500, 'Error al insertar watcher');
+                } elseif ($action === 'responder') {
+                    $insertR = insertarResponder($id_incidenciaWR, $id_usuarioWR);
+                    $insertR
+                        ? sendResponse(201, 'Responder insertado correctamente')
+                        : sendResponse(500, 'Error al insertar responder');
+                } else {
+                    sendResponse(400, 'Acción no válida');
                 }
             } else {
-                http_response_code(400);
-                echo json_encode(['message' => 'Faltan datos']);
+                sendResponse(400, 'Faltan datos');
             }
             break;
         case 'GET':
