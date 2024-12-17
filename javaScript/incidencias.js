@@ -5,8 +5,26 @@ document.addEventListener('DOMContentLoaded', function () {
     let priorities = [];
     let status = [];
     let usuarios = [];
-    let editingId;
+    let watchers = [];
+    let responders = [];
     const API_URL = 'backend/incidencias.php';
+
+    async function loadPriorities() {
+        try {
+            const response = await fetch(API_URL, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                insertPriorities(data.prioridades);
+            } else {
+                console.error('Error:', response.status);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
 
     async function loadIncidents() {
         try {
@@ -33,6 +51,64 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    async function loadWatchersResponders() {
+        try {
+            const response = await fetch(API_URL, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                watchers = data.watchers;
+                responders = data.responder
+            } else {
+                console.error('Error:', response.status);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    function renderWatchersResponders(incidentId) {
+        console.log(incidentId);
+        const infoList = document.getElementById('info-list');
+        infoList.innerHTML = '';    
+        const incident = incidents.find(incident => incident.id_incidencias === parseInt(incidentId));
+        console.log(incident);
+        const watcher = watchers.find(watcher => watcher.id_incidencias === incident.id_incidencias)?.id_usuario || 'None';
+        const responder = responders.find(responder => responder.id_incidencias === incident.id_incidencias)?.id_usuario || 'None';
+        if (incident) {
+            const incidentCard = document.createElement('div');
+            incidentCard.className = 'd-flex flex-column mb-2';
+            incidentCard.innerHTML = `
+            <div class="card mb-3 custom-card">
+                <div class="card-body row pb-0">
+                    <div class="col">
+                        <p class="card-title">Incident ID: ${incident.id_incidencias}</p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col">
+                            <h5 class="card-title">Watchers</h5>
+                                <ul class="list-group">
+                                    ${watcher}
+                                </ul>
+                        </div>
+                        <div class="col">
+                            <h5 class="card-title">Responders</h5>
+                                <ul class="list-group">
+                                    ${responder}
+                                </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+            infoList.appendChild(incidentCard);
+        }
+
+    }
+
     function renderIncidents(incidents) {
         const incidentList = document.getElementById('incident-list');
         incidentList.innerHTML = '';
@@ -43,6 +119,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const userName = usuarios.find(usuario => usuario.id_usuario === incident.id_usuario)?.userName || 'Desconocido';
             const incidentCard = document.createElement('div');
             incidentCard.className = 'd-flex flex-column mb-2';
+            incidentCard.setAttribute('data-id', incident.id_incidencias);
             incidentCard.innerHTML = `
             <div class="card mb-3 custom-card">
                 <div class="card-body row pb-0">
@@ -71,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <!-- Estado con Dropdown -->
                         <div class="dropdown position-relative">
                             <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownStatusButton" data-bs-toggle="dropdown" aria-expanded="false">
-                                ${statusName} <!-- Muestra el estado actual -->
+                                ${statusName}
                             </button>
                             <ul class="dropdown-menu dropdown-status position-absolute" style="z-index: 1050;" aria-labelledby="dropdownStatusButton">
                                 <!-- Itera sobre el arreglo de status y crea las opciones -->
@@ -106,40 +183,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function handleEditIncident(event) {
-        try {
-            const incidentId = event.target.dataset.id;
-            const incident = incidents.find(incident => incident.id === parseInt(incidentId));
-
-            document.getElementById('name').value = incident.definition;
-            document.getElementById('priority').value = incident.priority;
-
-            isEditing = true;
-            editingId = incidentId;
-
-            const incidentModal = new bootstrap.Modal(document.getElementById('incidentModal'));
-            incidentModal.show();
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    }
-
-    async function loadPriorities() {
-        try {
-            const response = await fetch(API_URL, {
-                method: 'GET',
-                credentials: 'include'
-            });
-            if (response.ok) {
-                const data = await response.json();
-                insertPriorities(data.prioridades);
-            } else {
-                console.error('Error:', response.status);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    }
 
 
     // Logica del dropdown en el formulario
@@ -163,22 +206,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // Trabaja con la logica del dropdown 
     function selectPriority(event, priority) {
-        const priorityButton = document.getElementById('priorityDropdown');
-        priorityButton.textContent = priority.nombre;
-        priorityButton.dataset.priorityId = priority.id_prioridad;
-    }
-
-
-    // Logica del dropdown renderizado 
-    function actualizarStatus(incidentId, newStatus) {
-        const incident = incidents.find(incident => incident.id_incidencias === parseInt(incidentId));
-        if (incident) {
-            incident.id_status = parseInt(newStatus);
-            console.log('Incidente actualizado:', incident);
-        }
-    }
-    // Trabaja con la logica del dropdown renderizado
-    function selectStatus(event, priority) {
         const priorityButton = document.getElementById('priorityDropdown');
         priorityButton.textContent = priority.nombre;
         priorityButton.dataset.priorityId = priority.id_prioridad;
@@ -236,13 +263,20 @@ document.addEventListener('DOMContentLoaded', function () {
     })
 
     document.getElementById('incident-list').addEventListener('click', async function (event) {
+        const incidentElement = event.target.closest('[data-id]');
+        const incidentId = incidentElement.getAttribute('data-id');
+        renderWatchersResponders(incidentId);
+    });
+
+    //Evento que se dispara cuando para actualizar el estado de una incidencia
+    document.getElementById('incident-list').addEventListener('click', async function (event) {
         if (event.target && event.target.matches('.change-status')) {
             const incidentId = event.target.dataset.id;
             const newStatus = event.target.dataset.status;
-            
+
             try {
                 const incident = incidents.find(incident => incident.id_incidencias === parseInt(incidentId));
-                
+
                 if (incident) {
                     const updatedIncident = { ...incident, id_status: parseInt(newStatus) };
                     console.log(incidentId);
@@ -260,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         }),
                         credentials: 'include'
                     });
-    
+
                     if (response.ok) {
                         loadIncidents();
                     } else {
@@ -289,4 +323,5 @@ document.addEventListener('DOMContentLoaded', function () {
     })
     loadPriorities();
     loadIncidents();
+    loadWatchersResponders();
 });

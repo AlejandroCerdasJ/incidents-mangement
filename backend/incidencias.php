@@ -2,6 +2,48 @@
 
 require 'db.php';
 
+function obtenerWatchers($id_incidencias = null)
+{
+    global $pdo;
+    try {
+        if ($id_incidencias) {
+            $sql = "SELECT * FROM WatchersPorIncidencia WHERE id_incidencias = :id_incidencias";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                'id_incidencias' => $id_incidencias,
+            ]);
+        } else {
+            $sql = "SELECT * FROM WatchersPorIncidencia";
+            $stmt = $pdo->query($sql);
+        }
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (\Throwable $th) {
+        logError("Error al obtener watchers: " . $th->getMessage());
+        return [];
+    }
+}
+
+function obtenerResponder($id_incidencias = null)
+{
+    global $pdo;
+    try {
+        if ($id_incidencias) {
+            $sql = "SELECT * FROM ResponderPorIncidencia WHERE id_incidencias = :id_incidencias";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                'id_incidencias' => $id_incidencias,
+            ]);
+        } else {
+            $sql = "SELECT * FROM ResponderPorIncidencia";
+            $stmt = $pdo->query($sql);
+        }
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (\Throwable $th) {
+        logError("Error al obtener responder: " . $th->getMessage());
+        return [];
+    }
+}
+
 function obtenerIncidencias($id_incidencias = null)
 {
     global $pdo;
@@ -14,7 +56,7 @@ function obtenerIncidencias($id_incidencias = null)
             ]);
         } else {
             $sql = "SELECT * FROM incidencias";
-            $stmt = $pdo->query($sql); 
+            $stmt = $pdo->query($sql);
         }
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (\Throwable $th) {
@@ -23,7 +65,8 @@ function obtenerIncidencias($id_incidencias = null)
     }
 }
 
-function obtenerUsuarios(){
+function obtenerUsuarios()
+{
     global $pdo;
 
     try {
@@ -64,11 +107,9 @@ function obtenerStatus()
     }
 }
 
-function crearIncidencia($id_usuario, $nombre, $descripcion,$id_status, $id_prioridad)
+function crearIncidencia($id_usuario, $nombre, $descripcion, $id_status, $id_prioridad)
 {
-
     global $pdo;
-
     try {
         $sql = "INSERT INTO incidencias (id_usuario, nombre, descripcion, id_status, id_prioridad) 
         values (:id_usuario, :nombre, :descripcion,:id_status, :id_prioridad)";
@@ -87,6 +128,41 @@ function crearIncidencia($id_usuario, $nombre, $descripcion,$id_status, $id_prio
     }
 }
 
+function insertarWatcher($id_incidencias, $id_usuario)
+{
+
+    global $pdo;
+    try {
+        $sql = "INSERT INTO WatchersPorIncidencia (id_incidencias, id_usuario) VALUES (:id_incidencias, :id_usuario)";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            'id_incidencias' => $id_incidencias,
+            'id_usuario' => $id_usuario
+        ]);
+        return $stmt->rowCount() > 0;
+    } catch (\Throwable $th) {
+        logError("Error al insertar watcher: " . $th->getMessage());
+        return false;
+    }
+}
+
+function insertarResponder($id_incidencias, $id_usuario)
+{
+    global $pdo;
+    try {
+        $sql = "INSERT INTO ResponderPorIncidencia (id_incidencias, id_usuario) VALUES (:id_incidencias, :id_usuario)";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            'id_incidencias' => $id_incidencias,
+            'id_usuario' => $id_usuario
+        ]);
+        return $stmt->rowCount() > 0;
+    } catch (\Throwable $th) {
+        logError("Error al insertar responder: " . $th->getMessage());
+        return false;
+    }
+}
+
 function editarIncidencia($id_incidencias, $id_usuario, $nombre, $descripcion, $id_status, $id_prioridad)
 {
     global $pdo; // Asegúrate de tener $pdo disponible en el contexto global
@@ -101,8 +177,8 @@ function editarIncidencia($id_incidencias, $id_usuario, $nombre, $descripcion, $
         $stmt = $pdo->prepare($sql);
 
         $stmt->execute([
-            'id_incidencias' => $id_incidencias, 
-            'id_usuario' => $id_usuario,       
+            'id_incidencias' => $id_incidencias,
+            'id_usuario' => $id_usuario,
             'nombre' => $nombre,
             'descripcion' => $descripcion,
             'id_status' => $id_status,
@@ -153,14 +229,14 @@ if (isset($_SESSION['user_id'])) {
     switch ($method) {
         case 'POST':
             if (isset($input['nombre'], $input['descripcion'], $input['id_status'], $input['id_prioridad'])) {
-              
-                $id_incidencia = crearIncidencia($user_id, $input['nombre'], $input['descripcion'],  $input['id_status'], $input['id_prioridad']);
+
+                $id_incidencia = crearIncidencia($user_id, $input['nombre'], $input['descripcion'], $input['id_status'], $input['id_prioridad']);
                 if ($id_incidencia > 0) {
-               
+
                     http_response_code(201);
                     echo json_encode(['id_incidencia' => $id_incidencia]);
                 } else {
-                
+
                     http_response_code(500);
                     echo json_encode(['message' => 'Error al crear incidencia']);
                 }
@@ -173,17 +249,24 @@ if (isset($_SESSION['user_id'])) {
             $prioridades = obtenerPrioridades();
             $status = obtenerStatus();
             $usuario = obtenerUsuarios();
-            if (isset($input['id_incidencias']))  {
+            if (isset($input['id_incidencias'])) {
                 $id_incidencias = $_GET['id_incidencias'];
-                $incidencias = obtenerIncidencias($id_incidencias); 
+                $incidencias = obtenerIncidencias($id_incidencias);
+                $responder = obtenerResponder($id_incidencias);
+                $watchers = obtenerWatchers($id_incidencias);
             } else {
                 $incidencias = obtenerIncidencias();
+                $responder = obtenerResponder();
+                $watchers = obtenerWatchers();
             }
             echo json_encode([
                 'prioridades' => $prioridades,
                 'incidencias' => $incidencias,
                 'status' => $status,
-                'usuarios' => $usuario
+                'usuarios' => $usuario,
+                'responder' => $responder,
+                'watchers' => $watchers
+
             ]);
             break;
         case 'PUT':

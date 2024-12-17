@@ -64,7 +64,7 @@
 
         <div class="container">
             <div class="row">
-                <!--Parte del filtro de busqueda-->
+                <!--Parte del filtro de busqueda y la información-->
                 <div class="col mb-4 border">
                     <div class="row">
                         <aside class="aside p-3 mb-4 shadow-sm">
@@ -89,13 +89,18 @@
                             </div>
                         </aside>
                     </div>
-                     <!--Aqui se muestran los watchers y los responders-->
-                    <div class="col border p-3 shadow-sm mb-4 watchers">
+                    <!--Aqui se muestran los watchers y los responders-->
+                    <div class="col mb-4">
                         <h4>Incident Info</h4>
+                        <div class="row" id="info-list">
+                            <div class="col mb-4">
+                                <!-- Mostrar aqui las incidentes info -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="col  border">
+                <div class="col-5  border">
                     <div class="row" id="incident-list">
                         <div class="col-12 col-md-6 col-lg-4 mb-4">
                             <!-- Mostrar aqui las incidentes -->
@@ -103,8 +108,8 @@
                     </div>
                 </div>
 
-                  <!--Aqui va el timeline-->
-                <div class="col border p-3 shadow-sm mb-4 timeline">  
+                <!--Aqui va el timeline-->
+                <div class="col border p-3 shadow-sm mb-4 timeline">
                     <h4>Timeline</h4>
                 </div>
 
