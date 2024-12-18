@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let usuarios = [];
     let watchers = [];
     let responders = [];
+    let roles = [];
+    let rolesUser = [];
     const API_URL = 'backend/incidencias.php';
 
     async function loadPriorities() {
@@ -59,9 +61,42 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             if (response.ok) {
                 const data = await response.json();
-                console.log(data);
                 watchers = data.watchers;
                 responders = data.responder
+            } else {
+                console.error('Error:', response.status);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    async function loadRoles() {
+        try {
+            const response = await fetch(API_URL, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                roles = data.roles;
+            } else {
+                console.error('Error:', response.status);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    async function loadRolUser(){
+        try {
+            const response = await fetch(API_URL, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                rolesUser = data.rolesporusuario;
             } else {
                 console.error('Error:', response.status);
             }
@@ -74,92 +109,157 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log(incidentId);
         const infoList = document.getElementById('info-list');
         infoList.innerHTML = '';
+        
+        // Encuentra la incidencia
         const incident = incidents.find(incident => incident.id_incidencias === parseInt(incidentId));
-        const watcher = watchers.find(watcher => watcher.id_incidencia === incident.id_incidencias) || 'None';
-        const responder = responders.find(responder => responder.id_incidencia === incident.id_incidencias) || 'None';
-        const watcherUserName = usuarios.find(usuario => usuario.id_usuario === watcher.id_usuario)?.userName || 'Desconocido';
-        const responderUserName = usuarios.find(usuario => usuario.id_usuario === responder.id_usuario)?.userName || 'Desconocido';
-        console.log(watcher.id_usuario, responder.id_usuario);
+        console.log(rolesUser);
         if (incident) {
+            // Filtrar todos los watchers y responders correspondientes a la incidencia
+            const watchersForIncident = watchers.filter(watcher => watcher.id_incidencia === incident.id_incidencias);
+            const respondersForIncident = responders.filter(responder => responder.id_incidencia === incident.id_incidencias);
+    
+            // Crear la lista de nombres de usuarios para watchers y responders
+            const watcherUserNames = watchersForIncident.map(watcher => {
+                const user = usuarios.find(usuario => usuario.id_usuario === watcher.id_usuario);
+                return user ? user.userName : 'Desconocido';
+            });
+    
+            const responderUserNames = respondersForIncident.map(responder => {
+                const user = usuarios.find(usuario => usuario.id_usuario === responder.id_usuario);
+                return user ? user.userName : 'Desconocido';
+            });
+    
             const incidentCard = document.createElement('div');
             incidentCard.className = 'd-flex flex-column mb-2';
             incidentCard.innerHTML = `
-            <div class="card mb-3 custom-card">
-                <div class="card-body row pb-0">
-                    <div class="col">
-                        <p class="card-title">Incident ID: ${incident.id_incidencias}</p>
-                    </div>
-                    
-                    <div class="row">
+                <div class="card mb-3 custom-card">
+                    <div class="card-body row pb-0">
                         <div class="col">
-                            <h5 class="card-title">Watchers</h5>
-
-                             <div class="d-flex justify-content-center mb-4">
-                                <button class="btn btn-sm btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
-                                    data-bs-target="#watcherModal">
-                                    <i class="bi bi-plus-circle"></i>
-                                    Add Watcher
-                                    </button>
-                                </div>
-
+                            <p class="card-title">Incident ID: ${incident.id_incidencias}</p>
+                        </div>
+    
+                        <div class="row">
+                            <div class="col">
+                                <h5 class="card-title text-uppercase font-weight-bold mb-3">Watchers</h5>
                                 <div class="dropdown position-relative">
-                                    <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownWatcherButton"         data-bs-toggle="dropdown" aria-expanded="false">Add Watcher
-                                    </button>
-                                        <ul class="dropdown-menu dropdown-status position-absolute" style="z-index: 1050;" aria-labelledby="dropdownWatcherButton">
-                                         <!-- Itera sobre el arreglo de status y crea las opciones -->
-                                         ${usuarios.map(item => `
-                                            <li>
-                                                <a class="dropdown-item usuario-watcher" href="#" data-id="${item.id_usuario}" 
-                                                incident-id="${incident.id_incidencias}">
-                                                ${item.userName}
+                                    <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownWatcherButton" data-bs-toggle="dropdown" aria-expanded="false">Add Watcher</button>
+                                    <ul class="dropdown-menu dropdown-status position-absolute" style="z-index: 1050;" aria-labelledby="dropdownWatcherButton">
+                                        ${usuarios.map(item => `
+                                            <li class="dropdown-item-wrapper">
+                                                <a class="dropdown-item usuario-watcher" href="#" data-id="${item.id_usuario}" incident-id="${incident.id_incidencias}">
+                                                    ${item.userName}
                                                 </a>
                                             </li>
-                                             `).join('')}
-                                        </ul>
-                                </div>
-                                    <ul class="list-group">
-                                       ${watcherUserName}
+                                        `).join('')}
                                     </ul>
                                 </div>
-                            
-                        <div class="col">
-                            <h5 class="card-title">Responders</h5>
-
-                             <div class="d-flex justify-content-center mb-4">
-                                <button class="btn btn-sm btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
-                                    data-bs-target="#responderModal">
-                                    <i class="bi bi-plus-circle"></i>
-                                    Add Responder
-                                    </button>
-                                </div>
-
-                            <div class="dropdown position-relative">
-                                    <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownResponderButton"         data-bs-toggle="dropdown" aria-expanded="false">Add Responder
-                                    </button>
-                                        <ul class="dropdown-menu dropdown-status position-absolute" style="z-index: 1050;" aria-labelledby="dropdownResponderButton">
-                                         <!-- Itera sobre el arreglo de status y crea las opciones -->
-                                         ${usuarios.map(item => `
-                                            <li>
-                                                <a class="dropdown-item usuario-responder" href="#" data-id="${item.id_usuario}"
-                                                incident-id="${incident.id_incidencias}">
-                                                ${item.userName}
+                                <ul class="list-group">
+                                    ${watchersForIncident.map(watcher => {
+                                        const user = usuarios.find(usuario => usuario.id_usuario === watcher.id_usuario);
+                                        // Buscar el rol correspondiente en rolesporincidencia
+                                        const watcherRole = rolesUser.find(role => 
+                                            role.id_usuario === watcher.id_usuario && 
+                                            role.id_incidencia === incident.id_incidencias);
+                                        const selectedRoleId = watcherRole ? watcherRole.id_rol : null;
+                                        return `
+                                            <li class="list-group-item">
+                                                ${user ? user.userName : 'Desconocido'}
+                                                <select class="form-select role-select" data-id="${watcher.id_usuario}" data-incident-id="${incident.id_incidencias}">
+                                                    ${roles.map(role => `
+                                                        <option value="${role.id_rol}" ${role.id_rol === selectedRoleId ? 'selected' : ''}>
+                                                            ${role.nombre}
+                                                        </option>
+                                                    `).join('')}
+                                                </select>
+                                            </li>
+                                        `;
+                                    }).join('')}
+                                </ul>
+                            </div>
+    
+                            <div class="col">
+                                <h5 class="card-title text-uppercase font-weight-bold mb-3">Responders</h5>
+                                <div class="dropdown position-relative">
+                                    <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownResponderButton" data-bs-toggle="dropdown" aria-expanded="false">Add Responder</button>
+                                    <ul class="dropdown-menu dropdown-status position-absolute" style="z-index: 1050;" aria-labelledby="dropdownResponderButton">
+                                        ${usuarios.map(item => `
+                                            <li class="dropdown-item-wrapper">
+                                                <a class="dropdown-item usuario-responder" href="#" data-id="${item.id_usuario}" incident-id="${incident.id_incidencias}">
+                                                    ${item.userName}
                                                 </a>
                                             </li>
-                                             `).join('')}
-                                        </ul>
+                                        `).join('')}
+                                    </ul>
                                 </div>
                                 <ul class="list-group">
-                                    ${responderUserName}
+                                    ${respondersForIncident.map(responder => {
+                                        const user = usuarios.find(usuario => usuario.id_usuario === responder.id_usuario);
+                                        // Buscar el rol correspondiente en rolesporincidencia
+                                        const responderRole = rolesUser.find(role => 
+                                            role.id_usuario === responder.id_usuario && 
+                                            role.id_incidencia === incident.id_incidencias);
+                                        const selectedRoleId = responderRole ? responderRole.id_rol : null;
+                                        return `
+                                            <li class="list-group-item">
+                                                ${user ? user.userName : 'Desconocido'}
+                                                <select class="form-select role-select" data-id="${responder.id_usuario}" data-incident-id="${incident.id_incidencias}">
+                                                    ${roles.map(role => `
+                                                        <option value="${role.id_rol}" ${role.id_rol === selectedRoleId ? 'selected' : ''}>
+                                                            ${role.nombre}
+                                                        </option>
+                                                    `).join('')}
+                                                </select>
+                                            </li>
+                                        `;
+                                    }).join('')}
                                 </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
             infoList.appendChild(incidentCard);
         }
+    
+        // Función para manejar el cambio de rol
+        document.querySelectorAll('.role-select').forEach(select => {
+            select.addEventListener('change', async (event) => {
+                const newRoleId = parseInt(event.target.value); // Nuevo id de rol
+                const userId = parseInt(event.target.dataset.id);
+                const incidentId = parseInt(event.target.dataset.incidentId);
+    
+                // Actualiza el rol en el array de watchers o responders según el id
+                const targetArray = (event.target.closest('.col').querySelector('h5').innerText === 'Watchers') ? watchers : responders;
+                const target = targetArray.find(item => item.id_usuario == userId && item.id_incidencia == incidentId);
+                
+                if (target) {
+                    target.id_rol = newRoleId;
+                    console.log(userId, newRoleId, incidentId);
 
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            id_usuario: userId,
+                            id_rol: newRoleId,
+                            id_incidencia: incidentId
+                        }),
+                        credentials: 'include'
+                    })
+                    if (!response.ok) {
+                        console.error('Error:', response.status);
+                    }
+                    // Aquí podrías hacer una llamada al servidor para guardar estos cambios, si es necesario.
+                }else{
+                    console.error('Usuario no encontrado');
+                }
+            });
+        });
     }
+    
+    
 
     function renderIncidents(incidents) {
         const incidentList = document.getElementById('incident-list');
@@ -439,4 +539,6 @@ document.addEventListener('DOMContentLoaded', function () {
     loadPriorities();
     loadIncidents();
     loadWatchersResponders();
+    loadRoles();
+    loadRolUser();
 });

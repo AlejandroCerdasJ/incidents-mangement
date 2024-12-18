@@ -2,6 +2,33 @@
 
 require 'db.php';
 
+
+function obtenerRolPorUsuario()
+{
+
+    global $pdo;
+    try {
+        $sql = "SELECT * FROM rolesporusuario";
+        $stmt = $pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (\Throwable $th) {
+        logError("Error al obtener roles por usuario: " . $th->getMessage());
+        return [];
+    }
+}
+function obtenerRoles()
+{
+    global $pdo;
+    try {
+        $sql = "SELECT * FROM Rol";
+        $stmt = $pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (\Throwable $th) {
+        logError("Error al obtener roles: " . $th->getMessage());
+        return [];
+    }
+}
+
 function obtenerWatchers($id_incidencias = null)
 {
     global $pdo;
@@ -124,6 +151,24 @@ function crearIncidencia($id_usuario, $nombre, $descripcion, $id_status, $id_pri
         return $pdo->lastInsertId();
     } catch (\Throwable $th) {
         logError("Error al crear incidencia: " . $th->getMessage());
+        return false;
+    }
+}
+
+function insertarRolPorUsuario($id_rol, $id_usuario, $id_incidencia)
+{
+    global $pdo;
+    try {
+        $sql = "INSERT INTO rolesporusuario (id_rol, id_usuario, id_incidencia) VALUES (:id_rol, :id_usuario, :id_incidencia)";    
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            'id_rol' => $id_rol,
+            'id_usuario' => $id_usuario,
+            'id_incidencia' => $id_incidencia
+        ]);
+        return $stmt->rowCount() > 0;
+    } catch (\Throwable $th) {
+        logError("Error al insertar rol por usuario: " . $th->getMessage());
         return false;
     }
 }
@@ -262,7 +307,12 @@ if (isset($_SESSION['user_id'])) {
                 } else {
                     sendResponse(400, 'Acción no válida');
                 }
-            } else {
+            } else if(isset($input['id_rol'], $input['id_usuario'])) {
+                $insertarRPU =insertarRolPorUsuario($input['id_rol'], $input['id_usuario'], $input['id_incidencia']);
+                $insertarRPU ? sendResponse(201, 'Rol insertado correctamente')
+                    : sendResponse(500, 'Error al insertar rol');
+
+            }else {
                 sendResponse(400, 'Faltan datos');
             }
             break;
@@ -270,6 +320,8 @@ if (isset($_SESSION['user_id'])) {
             $prioridades = obtenerPrioridades();
             $status = obtenerStatus();
             $usuario = obtenerUsuarios();
+            $roles = obtenerRoles();
+            $rolesporusuario = obtenerRolPorUsuario();
             if (isset($input['id_incidencias'])) {
                 $id_incidencias = $_GET['id_incidencias'];
                 $incidencias = obtenerIncidencias($id_incidencias);
@@ -286,7 +338,9 @@ if (isset($_SESSION['user_id'])) {
                 'status' => $status,
                 'usuarios' => $usuario,
                 'responder' => $responder,
-                'watchers' => $watchers
+                'watchers' => $watchers,
+                'roles' => $roles,
+                'rolesporusuario' => $rolesporusuario
 
             ]);
             break;
