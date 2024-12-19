@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log(data);
                 timeLine = data.timeline;
             } else {
                 console.error('Error al cargar el timeline:', response.status);
@@ -67,6 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 status = data.status;
                 usuarios = data.usuarios;
                 renderIncidents(incidents);
+                console.log(data);
             } else {
                 if (response.status === 401) {
                     window.location.href = 'index.html';
@@ -122,6 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (response.ok) {
                 const data = await response.json();
                 rolesUser = data.rolesporusuario;
+                console.log(rolesUser);
             } else {
                 console.error('Error:', response.status);
             }
@@ -163,18 +164,6 @@ document.addEventListener('DOMContentLoaded', function () {
             // Filtrar todos los watchers y responders correspondientes a la incidencia
             const watchersForIncident = watchers.filter(watcher => watcher.id_incidencia === incident.id_incidencias);
             const respondersForIncident = responders.filter(responder => responder.id_incidencia === incident.id_incidencias);
-            console.log(watchersForIncident, respondersForIncident);
-            // Crear la lista de nombres de usuarios para watchers y responders
-            const watcherUserNames = watchersForIncident.map(watcher => {
-                const user = usuarios.find(usuario => usuario.id_usuario === watcher.id_usuario);
-                return user ? user.userName : 'Desconocido';
-            });
-
-            const responderUserNames = respondersForIncident.map(responder => {
-                const user = usuarios.find(usuario => usuario.id_usuario === responder.id_usuario);
-                return user ? user.userName : 'Desconocido';
-            });
-            console.log(watcherUserNames, responderUserNames);
 
             const incidentCard = document.createElement('div');
             incidentCard.className = 'd-flex flex-column mb-2';
@@ -207,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                         // Buscar el rol correspondiente en rolesporincidencia
                                         const watcherRole = rolesUser.find(role => role.id_usuario === watcher.id_usuario &&role.id_incidencia === incident.id_incidencias);
                                         const selectedRoleId = watcherRole ? watcherRole.id_rol : null;
-                                        console.log(watcherRole, selectedRoleId, user);
+                                        console.log(watcherRole, selectedRoleId);
                                         return `
                                             <li class="list-group-item">
                                             ${user ? user.userName : 'Desconocido'}
@@ -266,7 +255,67 @@ document.addEventListener('DOMContentLoaded', function () {
             `;
             infoList.appendChild(incidentCard);
         }
+        // Función para manejar el cambio de rol
+            document.querySelectorAll('.role-select').forEach(select => {
+            select.addEventListener('change', async (event) => {
+                const newRoleId = parseInt(event.target.value); 
+                const userId = parseInt(event.target.dataset.id);
+                const incidentId = parseInt(event.target.dataset.incidentId);
+                // Actualiza el rol en el array de watchers o responders según el id
+                const targetArray = (event.target.closest('.col').querySelector('h5').innerText === 'Watchers') ? watchers : responders;
+                const target = targetArray.find(item => item.id_usuario == userId && item.id_incidencia == incidentId);
 
+                const existRole = rolesUser.find(role =>
+                role.id_usuario === userId &&
+                role.id_incidencia === incidentId 
+                );
+
+                if (existRole){
+                    console.log('El rol ya existe');
+
+                    const response = await fetch(API_URL, {
+                        method: 'PUT',
+                        headers:{
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            id_usuario: userId,
+                            id_rol: newRoleId,
+                            id_incidencia: incidentId
+                        }),
+                        credentials: 'include'
+                    })
+                    if(!response.ok){
+                        console.error('Error:', response.status);
+                    }else{
+                        console.log('Rol actualizado');
+                    }
+                }else{
+                    if (target) {
+                        target.id_rol = newRoleId;
+    
+                        const response = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                id_usuario: userId,
+                                id_rol: newRoleId,
+                                id_incidencia: incidentId
+                            }),
+                            credentials: 'include'
+                        })
+                        if (!response.ok) {
+                            console.error('Error:', response.status);
+                        }
+                        // Aquí podrías hacer una llamada al servidor para guardar estos cambios, si es necesario.
+                    } else {
+                        console.error('Usuario no encontrado');
+                    }
+                }
+            });
+        });
     }
 
     function renderIncidents(incidents) {
@@ -558,42 +607,7 @@ document.addEventListener('DOMContentLoaded', function () {
         priorityButton.dataset.priorityId = priority.id_prioridad;
     }
 
-    // Función para manejar el cambio de rol
-    document.querySelectorAll('.role-select').forEach(select => {
-        select.addEventListener('change', async (event) => {
-            const newRoleId = parseInt(event.target.value); 
-            const userId = parseInt(event.target.dataset.id);
-            const incidentId = parseInt(event.target.dataset.incidentId);
-
-            // Actualiza el rol en el array de watchers o responders según el id
-            const targetArray = (event.target.closest('.col').querySelector('h5').innerText === 'Watchers') ? watchers : responders;
-            const target = targetArray.find(item => item.id_usuario == userId && item.id_incidencia == incidentId);
-
-            if (target) {
-                target.id_rol = newRoleId;
-                console.log(userId, newRoleId, incidentId);
-
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        id_usuario: userId,
-                        id_rol: newRoleId,
-                        id_incidencia: incidentId
-                    }),
-                    credentials: 'include'
-                })
-                if (!response.ok) {
-                    console.error('Error:', response.status);
-                }
-                // Aquí podrías hacer una llamada al servidor para guardar estos cambios, si es necesario.
-            } else {
-                console.error('Usuario no encontrado');
-            }
-        });
-    });
+    
 
     document.getElementById('search-all').addEventListener('click', async function (event) {
         event.preventDefault();

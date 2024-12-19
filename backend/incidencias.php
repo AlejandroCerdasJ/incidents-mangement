@@ -3,6 +3,25 @@
 require 'db.php';
 
 
+function editarRoles($id_rol, $id_usuario, $id_incidencia)
+{
+
+    global $pdo;
+    try{
+        $sql = "UPDATE rolesporusuario SET id_rol = :id_rol WHERE id_usuario = :id_usuario AND id_incidencia = :id_incidencia";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            'id_rol' => $id_rol,
+            'id_usuario' => $id_usuario,
+            'id_incidencia' => $id_incidencia
+        ]);
+        return $stmt->rowCount() > 0;
+    }catch(\Throwable $th){
+        logError("Error al editar roles: " . $th->getMessage());
+        return false;
+    }
+}
+
 function obtenerNombreEstado($id_status)
 {
     global $pdo;
@@ -475,7 +494,16 @@ if (isset($_SESSION['user_id'])) {
                     http_response_code(404);
                     echo json_encode(['message' => 'Incidencia no encontrada']);
                 }
-            } else {
+            } else if(isset($input['id_usuario'], $input['id_rol'], $input['id_incidencia'])) {
+                $rolEditado = editarRoles($input['id_rol'], $input['id_usuario'], $input['id_incidencia']);
+                if ($rolEditado) {
+                    http_response_code(200);
+                    echo json_encode(['message' => 'Rol editado correctamente']);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['message' => 'Rol no encontrado']);
+                }
+            }else{
                 http_response_code(400);
                 echo json_encode(['message' => 'Faltan datos']);
             }
