@@ -143,12 +143,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const user = usuarios.find(usuario => usuario.id_usuario === item.id_usuario);
             const statusName = status.find(status => status.id_status === item.newStatus)?.nombre || 'Desconocido';
             const prevStatusName = status.find(status => status.id_status === item.prevStatus)?.nombre || 'Desconocido';
+            const idIncidencia = item.id_incidencia;
             return `
-                <div class="timeline-item">
+                <div class="timeline-item border-bottom">
                     <div class="date">${new Date(item.fecha).toLocaleString()}</div>
                     <div class="status">De: <strong>${prevStatusName}</strong> → A: <strong>${statusName}</strong></div>
-                    <div class="description">${item.descripcion || 'Sin descripción'}</div>
-                    <div class="user">Realizado por: ${user?.userName || 'Usuario desconocido'}</div>
+                    <div class="description"><strong>${item.descripcion || 'Sin descripción'}:</strong><strong class="text-info"> ${idIncidencia}</strong></div>
+                    <div class="user">Realizado por: <strong>${user?.userName || 'Usuario desconocido'}</strong></div>
                     </div>
             `;
         }).join('');
@@ -168,14 +169,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const incidentCard = document.createElement('div');
             incidentCard.className = 'd-flex flex-column mb-2';
             incidentCard.innerHTML = `
-                <div class="card mb-3 custom-card">
-                    <div class="card-body row pb-0">
+                <div class="card mb-3 custom-card border border-info">
+                    <div class="card-body row pb-0 ">
                         <div class="col">
-                            <p class="card-title">Incident ID: ${incident.id_incidencias}</p>
+                            <p class="card-title text-danger fw-bold">Incident ID: ${incident.id_incidencias}</p>
                         </div>
     
                         <div class="row">
-                            <div class="col">
+                            <div class="col mb-3">
                                 <h5 class="card-title text-uppercase font-weight-bold mb-3">Watchers</h5>
                                 <div class="dropdown position-relative">
                                     <button class="btn btn-info btn-sm dropdown-toggle fw-bold" type="button" id="dropdownWatcherButton" data-bs-toggle="dropdown" aria-expanded="false">Add Watcher</button>
@@ -289,6 +290,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         console.error('Error:', response.status);
                     }else{
                         console.log('Rol actualizado');
+                        loadWatchersResponders(incidentId);
+                        renderWatchersResponders(incidentId);
                     }
                 }else{
                     if (target) {
@@ -308,8 +311,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         })
                         if (!response.ok) {
                             console.error('Error:', response.status);
+                        } else {
+                            console.log('Nuevo rol asignado');
+                            loadWatchersResponders(incidentId);
+                            renderWatchersResponders(incidentId);
                         }
-                        // Aquí podrías hacer una llamada al servidor para guardar estos cambios, si es necesario.
                     } else {
                         console.error('Usuario no encontrado');
                     }
@@ -607,8 +613,6 @@ document.addEventListener('DOMContentLoaded', function () {
         priorityButton.dataset.priorityId = priority.id_prioridad;
     }
 
-    
-
     document.getElementById('search-all').addEventListener('click', async function (event) {
         event.preventDefault();
         renderIncidents(incidents);
@@ -719,6 +723,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 if (!response.ok) {
                     console.error('Error:', response.status);
+                }else{
+                    loadWatchersResponders();
+                    renderWatchersResponders(incidentId);
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -755,6 +762,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     if (response.ok) {
                         loadIncidents();
+                        loadTimeLine(incidentId);
+                        renderTimeLine(timeLine);
                     } else {
                         console.error('Error:', response.status);
                     }

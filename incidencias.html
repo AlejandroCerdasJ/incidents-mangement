@@ -49,10 +49,10 @@
             </button>
         </div>
 
-        <div class="container">
+        <div class="container w-100">
             <div class="row">
                 <!--Parte del filtro de busqueda y la información-->
-                <div class="col mb-4 border">
+                <div class="col mb-4 ">
                     <div class="row">
                         <aside class="aside p-3 mb-4 shadow-sm">
                             <h4>Search Incident</h4>
@@ -77,9 +77,9 @@
                         </aside>
                     </div>
                     <!--Aqui se muestran los watchers y los responders-->
-                    <div class="col mb-4">
+                    <div class="col mb-4 ">
                         <h4 class="mb-3 text-decoration-underline">Incident Info</h4>
-                        <div class="row" id="info-list">
+                        <div class="row shadow-sm custom-shadow" id="info-list">
                             <div class="col mb-4">
                                 <!-- Mostrar aqui las incidentes info -->
                             </div>
@@ -87,7 +87,7 @@
                     </div>
                 </div>
 
-                <div class="col-5  border">
+                <div class="col-5 ">
                     <div class="row" id="incident-list">
                         <div class="col-12 col-md-6 col-lg-4 mb-4">
                             <!-- Mostrar aqui las incidentes -->
@@ -96,10 +96,11 @@
                 </div>
 
                 <!--Aqui va el timeline-->
-                <div class="col border p-3 shadow-sm mb-4" id="timeline">
+                <div class="col border-start p-3 shadow-sm mb-4" id="timeline">
                     <h4 class="mb-3 text-decoration-underline">Timeline</h4>
-                    <div class=" timeline-container" id="timeline-container">
-                        
+                    <div class=" timeline-container" id="timeline-container" style="overflow-y: auto; height: 500px;">
+                        <!-- Aqui se cargaran los eventos de la incidencia -->
+                    </div>
                 </div>
 
             </div>
