@@ -3,6 +3,102 @@
 require 'db.php';
 
 
+function obtenerNombreEstado($id_status)
+{
+    global $pdo;
+    try {
+        $sql = "SELECT nombre FROM Status WHERE id_status = :id_status";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(['id_status' => $id_status]);
+        $estado = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $estado['nombre'] ?? 'Desconocido';
+    } catch (\Throwable $th) {
+        logError("Error al obtener nombre del estado: " . $th->getMessage());
+        return 'Desconocido';
+    }
+}
+
+function registrarCambioEnTimeline($id_incidencia, $descripcion, $newStatus, $id_usuario)
+{
+    global $pdo;
+
+    
+    try {
+        // Obtener el estado previo de la incidencia desde la base de datos
+        $sqlPrevStatus = "SELECT id_status FROM incidencias WHERE id_incidencias = :id_incidencia";
+        $stmtPrevStatus = $pdo->prepare($sqlPrevStatus);
+        $stmtPrevStatus->execute(params: ['id_incidencia' => $id_incidencia]);
+        $prevStatus = $stmtPrevStatus->fetchColumn(); 
+
+        if ($prevStatus === false) {
+            throw new Exception("No se encontró el estado previo para la incidencia.");
+        }
+
+        error_log("Intentando registrar cambio en el timeline: id_incidencia = $id_incidencia, descripcion = $descripcion, prevStatus = $prevStatus, newStatus = $newStatus, id_usuario = $id_usuario");
+
+        // Insertar el cambio en el timeline
+        $sql = "
+            INSERT INTO Timeline (id_incidencia, descripcion, prevStatus, newStatus, id_usuario)
+            VALUES (:id_incidencia, :descripcion, :prevStatus, :newStatus, :id_usuario)
+        ";
+
+        // Preparar la declaración y ejecutar la consulta
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            'id_incidencia' => $id_incidencia,
+            'descripcion' => $descripcion,
+            'prevStatus' => $prevStatus,
+            'newStatus' => $newStatus,
+            'id_usuario' => $id_usuario
+        ]);
+
+        // Verificar si la inserción fue exitosa y registrar en los logs
+        if ($stmt->rowCount() > 0) {
+            error_log("Cambio registrado correctamente en Timeline.");
+        } else {
+            error_log("No se registró el cambio en Timeline.");
+        }
+
+        // Verificar si la inserción fue exitosa
+        return $stmt->rowCount() > 0;
+    } catch (\Throwable $th) {
+        // Log de error en caso de fallo
+        logError("Error al registrar cambio en el timeline: " . $th->getMessage());
+        return false;
+    }
+}
+
+function obtenerTimeLine($id_incidencia = null)
+{
+    global $pdo;
+    try {
+        if ($id_incidencia) {
+            // Obtener timeline de una incidencia específica
+            $sql = "
+                SELECT 
+                    t.fecha,
+                    t.descripcion,
+                    s1.nombre AS prev_status,
+                    s2.nombre AS new_status,
+                    u.userName
+                FROM Timeline t
+                WHERE t.id_incidencia = :id_incidencia
+                ORDER BY t.fecha DESC
+            ";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute(['id_incidencia' => $id_incidencia]);
+        } else {
+            $sql = "Select * from Timeline";
+            $stmt = $pdo->query($sql);
+        }
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (\Throwable $th) {
+        logError(message: "Error al obtener timeline: " . $th->getMessage());
+        return [];
+    }
+}
+
+
 function obtenerRolPorUsuario()
 {
 
@@ -159,7 +255,7 @@ function insertarRolPorUsuario($id_rol, $id_usuario, $id_incidencia)
 {
     global $pdo;
     try {
-        $sql = "INSERT INTO rolesporusuario (id_rol, id_usuario, id_incidencia) VALUES (:id_rol, :id_usuario, :id_incidencia)";    
+        $sql = "INSERT INTO rolesporusuario (id_rol, id_usuario, id_incidencia) VALUES (:id_rol, :id_usuario, :id_incidencia)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             'id_rol' => $id_rol,
@@ -184,7 +280,7 @@ function insertarWatcher($id_incidencia, $id_usuario)
             'id_incidencia' => $id_incidencia,
             'id_usuario' => $id_usuario
         ]);
-        
+
         return $stmt->rowCount() > 0;
     } catch (\Throwable $th) {
         logError("Error al insertar watcher: " . $th->getMessage());
@@ -282,7 +378,20 @@ if (isset($_SESSION['user_id'])) {
     switch ($method) {
         case 'POST':
             if (isset($input['nombre'], $input['descripcion'], $input['id_status'], $input['id_prioridad'])) {
+                //Registrar cambio en timeline
+                $postTimeLine = registrarCambioEnTimeline($id_incidencia, 'Incidencia creada', $input['id_status'], $user_id);
+
+                //Guardar incidencia
                 $id_incidencia = crearIncidencia($user_id, $input['nombre'], $input['descripcion'], $input['id_status'], $input['id_prioridad']);
+
+               
+
+                if ($postTimeLine) {
+                    logDebug("Cambio en timeline registrado con éxito");
+                } else {
+                    logError("Error al registrar cambio en timeline");
+                }
+
                 if ($id_incidencia > 0) {
                     sendResponse(201, ['id_incidencia' => $id_incidencia]);
                 } else {
@@ -307,12 +416,12 @@ if (isset($_SESSION['user_id'])) {
                 } else {
                     sendResponse(400, 'Acción no válida');
                 }
-            } else if(isset($input['id_rol'], $input['id_usuario'])) {
-                $insertarRPU =insertarRolPorUsuario($input['id_rol'], $input['id_usuario'], $input['id_incidencia']);
+            } else if (isset($input['id_rol'], $input['id_usuario'])) {
+                $insertarRPU = insertarRolPorUsuario($input['id_rol'], $input['id_usuario'], $input['id_incidencia']);
                 $insertarRPU ? sendResponse(201, 'Rol insertado correctamente')
                     : sendResponse(500, 'Error al insertar rol');
 
-            }else {
+            } else {
                 sendResponse(400, 'Faltan datos');
             }
             break;
@@ -327,10 +436,12 @@ if (isset($_SESSION['user_id'])) {
                 $incidencias = obtenerIncidencias($id_incidencias);
                 $responder = obtenerResponder($id_incidencias);
                 $watchers = obtenerWatchers($id_incidencias);
+                $timeline = obtenerTimeLine($id_incidencias);
             } else {
                 $incidencias = obtenerIncidencias();
                 $responder = obtenerResponder();
                 $watchers = obtenerWatchers();
+                $timeline = obtenerTimeLine();
             }
             echo json_encode([
                 'prioridades' => $prioridades,
@@ -340,13 +451,23 @@ if (isset($_SESSION['user_id'])) {
                 'responder' => $responder,
                 'watchers' => $watchers,
                 'roles' => $roles,
-                'rolesporusuario' => $rolesporusuario
+                'rolesporusuario' => $rolesporusuario,
+                'timeline' => $timeline
 
             ]);
             break;
         case 'PUT':
             if (isset($input['id_incidencias'], $input['nombre'], $input['descripcion'], $input['id_status'], $input['id_prioridad'])) {
+                $actualizadoTimeLine = registrarCambioEnTimeline($input['id_incidencias'], 'Incidencia actualizada', $input['id_status'], $user_id);
+
                 $actualizado = editarIncidencia($input['id_incidencias'], $user_id, $input['nombre'], $input['descripcion'], $input['id_status'], $input['id_prioridad']);
+
+                if($actualizadoTimeLine){
+                    sendResponse(201, 'Cambio registrado en timeline'); 
+                } else {
+                    sendResponse(500, 'Error al registrar cambio en timeline');
+                }
+
                 if ($actualizado) {
                     http_response_code(200);
                     echo json_encode(['message' => 'Incidencia actualizada correctamente']);

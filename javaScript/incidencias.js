@@ -9,7 +9,32 @@ document.addEventListener('DOMContentLoaded', function () {
     let responders = [];
     let roles = [];
     let rolesUser = [];
+    let timeLine = [];
     const API_URL = 'backend/incidencias.php';
+
+    async function loadTimeLine(incidentId) {
+        const timeLineContainer = document.getElementById('timeline-container');
+        timeLineContainer.innerHTML = '<p class="text-center mt-3 fw-bold"> Click on an incident to see the timeline...</p>';
+
+        try {
+            const response = await fetch(`${API_URL}/timeline/${incidentId}`, {
+                method: 'GET',
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log(data);
+                timeLine = data.timeline;
+            } else {
+                console.error('Error al cargar el timeline:', response.status);
+                timeLineContainer.innerHTML = '<p>Error al cargar el historial.</p>';
+            }
+        } catch (error) {
+            console.error('Error al cargar el timeline:', error);
+            timeLineContainer.innerHTML = '<p>Error de conexión.</p>';
+        }
+    }
 
     async function loadPriorities() {
         try {
@@ -88,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function loadRolUser(){
+    async function loadRolUser() {
         try {
             const response = await fetch(API_URL, {
                 method: 'GET',
@@ -105,30 +130,52 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function renderTimeLine(timeLine) {
+        const timeLineContainer = document.getElementById('timeline-container');
+
+        if (timeLine.length === 0) {
+            timeLineContainer.innerHTML = '<p class="text-center mt-3 fw-bold">There is no history...</p>';
+            return;
+        }
+
+        timeLineContainer.innerHTML = timeLine.map(item => {
+            const user = usuarios.find(usuario => usuario.id_usuario === item.id_usuario);
+            const statusName = status.find(status => status.id_status === item.newStatus)?.nombre || 'Desconocido';
+            const prevStatusName = status.find(status => status.id_status === item.prevStatus)?.nombre || 'Desconocido';
+            return `
+                <div class="timeline-item">
+                    <div class="date">${new Date(item.fecha).toLocaleString()}</div>
+                    <div class="status">De: <strong>${prevStatusName}</strong> → A: <strong>${statusName}</strong></div>
+                    <div class="description">${item.descripcion || 'Sin descripción'}</div>
+                    <div class="user">Realizado por: ${user?.userName || 'Usuario desconocido'}</div>
+                    </div>
+            `;
+        }).join('');
+    }
+
     function renderWatchersResponders(incidentId) {
-        console.log(incidentId);
         const infoList = document.getElementById('info-list');
         infoList.innerHTML = '';
-        
+
         // Encuentra la incidencia
         const incident = incidents.find(incident => incident.id_incidencias === parseInt(incidentId));
-        console.log(rolesUser);
         if (incident) {
             // Filtrar todos los watchers y responders correspondientes a la incidencia
             const watchersForIncident = watchers.filter(watcher => watcher.id_incidencia === incident.id_incidencias);
             const respondersForIncident = responders.filter(responder => responder.id_incidencia === incident.id_incidencias);
-    
+            console.log(watchersForIncident, respondersForIncident);
             // Crear la lista de nombres de usuarios para watchers y responders
             const watcherUserNames = watchersForIncident.map(watcher => {
                 const user = usuarios.find(usuario => usuario.id_usuario === watcher.id_usuario);
                 return user ? user.userName : 'Desconocido';
             });
-    
+
             const responderUserNames = respondersForIncident.map(responder => {
                 const user = usuarios.find(usuario => usuario.id_usuario === responder.id_usuario);
                 return user ? user.userName : 'Desconocido';
             });
-    
+            console.log(watcherUserNames, responderUserNames);
+
             const incidentCard = document.createElement('div');
             incidentCard.className = 'd-flex flex-column mb-2';
             incidentCard.innerHTML = `
@@ -142,7 +189,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             <div class="col">
                                 <h5 class="card-title text-uppercase font-weight-bold mb-3">Watchers</h5>
                                 <div class="dropdown position-relative">
-                                    <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownWatcherButton" data-bs-toggle="dropdown" aria-expanded="false">Add Watcher</button>
+                                    <button class="btn btn-info btn-sm dropdown-toggle fw-bold" type="button" id="dropdownWatcherButton" data-bs-toggle="dropdown" aria-expanded="false">Add Watcher</button>
+
                                     <ul class="dropdown-menu dropdown-status position-absolute" style="z-index: 1050;" aria-labelledby="dropdownWatcherButton">
                                         ${usuarios.map(item => `
                                             <li class="dropdown-item-wrapper">
@@ -153,34 +201,33 @@ document.addEventListener('DOMContentLoaded', function () {
                                         `).join('')}
                                     </ul>
                                 </div>
-                                <ul class="list-group">
-                                    ${watchersForIncident.map(watcher => {
+                                    <ul class="list-group mt-2">
+                                        ${watchersForIncident.map(watcher => {
                                         const user = usuarios.find(usuario => usuario.id_usuario === watcher.id_usuario);
                                         // Buscar el rol correspondiente en rolesporincidencia
-                                        const watcherRole = rolesUser.find(role => 
-                                            role.id_usuario === watcher.id_usuario && 
-                                            role.id_incidencia === incident.id_incidencias);
+                                        const watcherRole = rolesUser.find(role => role.id_usuario === watcher.id_usuario &&role.id_incidencia === incident.id_incidencias);
                                         const selectedRoleId = watcherRole ? watcherRole.id_rol : null;
+                                        console.log(watcherRole, selectedRoleId, user);
                                         return `
                                             <li class="list-group-item">
-                                                ${user ? user.userName : 'Desconocido'}
+                                            ${user ? user.userName : 'Desconocido'}
                                                 <select class="form-select role-select" data-id="${watcher.id_usuario}" data-incident-id="${incident.id_incidencias}">
-                                                    ${roles.map(role => `
-                                                        <option value="${role.id_rol}" ${role.id_rol === selectedRoleId ? 'selected' : ''}>
-                                                            ${role.nombre}
-                                                        </option>
-                                                    `).join('')}
+                                                ${roles.map(role => `
+                                                    <option value="${role.id_rol}" ${role.id_rol === selectedRoleId ? 'selected' : ''}>
+                                                     ${role.nombre}
+                                                    </option>
+                                                `).join('')}
                                                 </select>
                                             </li>
                                         `;
-                                    }).join('')}
-                                </ul>
-                            </div>
+                                        }).join('')}
+                                    </ul>
+                                </div>
     
                             <div class="col">
                                 <h5 class="card-title text-uppercase font-weight-bold mb-3">Responders</h5>
                                 <div class="dropdown position-relative">
-                                    <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownResponderButton" data-bs-toggle="dropdown" aria-expanded="false">Add Responder</button>
+                                    <button class="btn btn-info btn-sm dropdown-toggle fw-bold" type="button" id="dropdownResponderButton" data-bs-toggle="dropdown" aria-expanded="false">Add Responder</button>
                                     <ul class="dropdown-menu dropdown-status position-absolute" style="z-index: 1050;" aria-labelledby="dropdownResponderButton">
                                         ${usuarios.map(item => `
                                             <li class="dropdown-item-wrapper">
@@ -191,26 +238,25 @@ document.addEventListener('DOMContentLoaded', function () {
                                         `).join('')}
                                     </ul>
                                 </div>
-                                <ul class="list-group">
+                                    <ul class="list-group mt-2">
                                     ${respondersForIncident.map(responder => {
-                                        const user = usuarios.find(usuario => usuario.id_usuario === responder.id_usuario);
-                                        // Buscar el rol correspondiente en rolesporincidencia
-                                        const responderRole = rolesUser.find(role => 
-                                            role.id_usuario === responder.id_usuario && 
-                                            role.id_incidencia === incident.id_incidencias);
-                                        const selectedRoleId = responderRole ? responderRole.id_rol : null;
-                                        return `
-                                            <li class="list-group-item">
-                                                ${user ? user.userName : 'Desconocido'}
-                                                <select class="form-select role-select" data-id="${responder.id_usuario}" data-incident-id="${incident.id_incidencias}">
-                                                    ${roles.map(role => `
-                                                        <option value="${role.id_rol}" ${role.id_rol === selectedRoleId ? 'selected' : ''}>
+                                    const user = usuarios.find(usuario => usuario.id_usuario === responder.id_usuario);
+                                    // Buscar el rol correspondiente en rolesporincidencia
+                                    const responderRole = rolesUser.find(role =>role.id_usuario === responder.id_usuario && role.id_incidencia === incident.id_incidencias);
+                                    const selectedRoleId = responderRole ? responderRole.id_rol : null;
+                                    console.log(responderRole, selectedRoleId, user);
+                                    return `
+                                        <li class="list-group-item">
+                                            ${user ? user.userName : 'Desconocido'}
+                                            <select class="form-select role-select" data-id="${responder.id_usuario}" data-incident-id="${incident.id_incidencias}">
+                                                ${roles.map(role => `
+                                                    <option value="${role.id_rol}" ${role.id_rol === selectedRoleId ? 'selected' : ''}>
                                                             ${role.nombre}
-                                                        </option>
-                                                    `).join('')}
-                                                </select>
-                                            </li>
-                                        `;
+                                                    </option>
+                                                `).join('')}
+                                            </select>
+                                        </li>
+                                    `;
                                     }).join('')}
                                 </ul>
                             </div>
@@ -220,46 +266,8 @@ document.addEventListener('DOMContentLoaded', function () {
             `;
             infoList.appendChild(incidentCard);
         }
-    
-        // Función para manejar el cambio de rol
-        document.querySelectorAll('.role-select').forEach(select => {
-            select.addEventListener('change', async (event) => {
-                const newRoleId = parseInt(event.target.value); // Nuevo id de rol
-                const userId = parseInt(event.target.dataset.id);
-                const incidentId = parseInt(event.target.dataset.incidentId);
-    
-                // Actualiza el rol en el array de watchers o responders según el id
-                const targetArray = (event.target.closest('.col').querySelector('h5').innerText === 'Watchers') ? watchers : responders;
-                const target = targetArray.find(item => item.id_usuario == userId && item.id_incidencia == incidentId);
-                
-                if (target) {
-                    target.id_rol = newRoleId;
-                    console.log(userId, newRoleId, incidentId);
 
-                    const response = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            id_usuario: userId,
-                            id_rol: newRoleId,
-                            id_incidencia: incidentId
-                        }),
-                        credentials: 'include'
-                    })
-                    if (!response.ok) {
-                        console.error('Error:', response.status);
-                    }
-                    // Aquí podrías hacer una llamada al servidor para guardar estos cambios, si es necesario.
-                }else{
-                    console.error('Usuario no encontrado');
-                }
-            });
-        });
     }
-    
-    
 
     function renderIncidents(incidents) {
         const incidentList = document.getElementById('incident-list');
@@ -292,14 +300,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     
                     <div class="col-6"> 
                         <!-- Descripción -->
-                            <h5 class="card-title mb-0">${incident.descripcion}</h5>
-                        
+                        <div class="row">
+                            <div >
+                            <h5 class="card-title mb-0">${incident.nombre}</h5>
+                            </div>
+
+                            <div >
+                            <p class="card-title mb-0 text-justify mt-2 fw-bold">${incident.descripcion}</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="col">
                         <!-- Estado con Dropdown -->
                         <div class="dropdown position-relative">
-                            <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownStatusButton" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="btn btn-info btn-sm dropdown-toggle fw-bold" type="button" id="dropdownStatusButton" data-bs-toggle="dropdown" aria-expanded="false">
                                 ${statusName}
                             </button>
                             <ul class="dropdown-menu dropdown-status position-absolute" style="z-index: 1050;" aria-labelledby="dropdownStatusButton">
@@ -335,7 +350,187 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Función para filtrar por estado
+    function renderFilter(statusId) {
 
+        const incidentList = document.getElementById('incident-list');
+        incidentList.innerHTML = '';
+        const incidentsFiltered = incidents.filter(incident => incident.id_status === statusId);
+
+        if (incidentsFiltered.length === 0) {
+            incidentList.innerHTML = '<h3 class="text-center mt-3">No hay incidencias con este estado.</h3>';
+            return;
+        }
+
+        incidentsFiltered.forEach(incident => {
+
+            const priorityName = priorities.find(priority => priority.id_prioridad === incident.id_prioridad)?.nombre || 'Desconocido';
+            const priorityColor = priorities.find(priority => priority.id_prioridad === incident.id_prioridad)?.color || 'Desconocido';
+            const statusName = status.find(status => status.id_status === incident.id_status)?.nombre || 'Desconocido';
+            const userName = usuarios.find(usuario => usuario.id_usuario === incident.id_usuario)?.userName || 'Desconocido';
+            const incidentCard = document.createElement('div');
+            incidentCard.className = 'd-flex flex-column mb-2';
+            incidentCard.setAttribute('data-id', incident.id_incidencias);
+            incidentCard.innerHTML = `
+            <div class="card mb-3 custom-card">
+                <div class="card-body row pb-0">
+                    <div class="col">
+                        <div class="row mb-2 mb-md-0 text-center text-md-start">
+                            <!-- ID del incidente -->
+                            <div class="col  text-start">
+                                <span class="badge text-bg-secondary text-truncate">#${incident.id_incidencias}</span>
+                            </div>
+
+                            <!-- Prioridad -->  
+                            <div class="col-6  text-end">
+                                <span class="fw-bold badge bg-${priorityColor}">${priorityName}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-6"> 
+                        <!-- Descripción -->
+                        <div class="row">
+                            <div >
+                            <h5 class="card-title mb-0">${incident.nombre}</h5>
+                            </div>
+
+                            <div >
+                            <p class="card-title mb-0 text-justify mt-2 fw-bold">${incident.descripcion}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col">
+                        <!-- Estado con Dropdown -->
+                        <div class="dropdown position-relative">
+                            <button class="btn btn-info btn-sm dropdown-toggle fw-bold" type="button" id="dropdownStatusButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                ${statusName}
+                            </button>
+                            <ul class="dropdown-menu dropdown-status position-absolute" style="z-index: 1050;" aria-labelledby="dropdownStatusButton">
+                                <!-- Itera sobre el arreglo de status y crea las opciones -->
+                                ${status.map(item => `
+                                    <li>
+                                        <a class="dropdown-item change-status" href="#" data-id="${incident.id_incidencias}" data-status="${item.id_status}">
+                                            ${item.nombre}
+                                        </a>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="col">
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <!-- Usuario -->
+                            <p class="card-text mb-0 fw-bold">
+                                ${userName}
+                            </p>
+                            <!-- Fecha de creación -->
+                            <p class="card-text mb-0">
+                                <small class="text-muted">Creation Date: ${incident.fecha_creacion}</small>
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        `;
+            incidentList.appendChild(incidentCard);
+        });
+
+    }
+
+    // Función para filtrar por fecha
+    function renderDateFilter(dateFilter) {
+
+        const incidentList = document.getElementById('incident-list');
+        incidentList.innerHTML = '';
+        const incidentsFiltered = incidents.filter(incident => incident.fecha_creacion.split(' ')[0] === dateFilter);
+        console.log(incidentsFiltered);
+
+        if (incidentsFiltered.length === 0) {
+            incidentList.innerHTML = '<h3 class="text-center mt-3">No hay incidencias con esta fecha.</h3>';
+            return;
+        }
+
+        incidentsFiltered.forEach(incident => {
+
+            const priorityName = priorities.find(priority => priority.id_prioridad === incident.id_prioridad)?.nombre || 'Desconocido';
+            const priorityColor = priorities.find(priority => priority.id_prioridad === incident.id_prioridad)?.color || 'Desconocido';
+            const statusName = status.find(status => status.id_status === incident.id_status)?.nombre || 'Desconocido';
+            const userName = usuarios.find(usuario => usuario.id_usuario === incident.id_usuario)?.userName || 'Desconocido';
+            const incidentCard = document.createElement('div');
+            incidentCard.className = 'd-flex flex-column mb-2';
+            incidentCard.setAttribute('data-id', incident.id_incidencias);
+            incidentCard.innerHTML = `
+            <div class="card mb-3 custom-card">
+                <div class="card-body row pb-0">
+                    <div class="col">
+                        <div class="row mb-2 mb-md-0 text-center text-md-start">
+                            <!-- ID del incidente -->
+                            <div class="col  text-start">
+                                <span class="badge text-bg-secondary text-truncate">#${incident.id_incidencias}</span>
+                            </div>
+
+                            <!-- Prioridad -->  
+                            <div class="col-6  text-end">
+                                <span class="fw-bold badge bg-${priorityColor}">${priorityName}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                   <div class="col-6"> 
+                        <!-- Descripción -->
+                        <div class="row">
+                            <div >
+                            <h5 class="card-title mb-0">${incident.nombre}</h5>
+                            </div>
+
+                            <div >
+                            <p class="card-title mb-0 text-justify mt-2 fw-bold">${incident.descripcion}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col">
+                        <!-- Estado con Dropdown -->
+                        <div class="dropdown position-relative">
+                            <button class="btn btn-info btn-sm dropdown-toggle fw-bold" type="button" id="dropdownStatusButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                ${statusName}
+                            </button>
+                            <ul class="dropdown-menu dropdown-status position-absolute" style="z-index: 1050;" aria-labelledby="dropdownStatusButton">
+                                <!-- Itera sobre el arreglo de status y crea las opciones -->
+                                ${status.map(item => `
+                                    <li>
+                                        <a class="dropdown-item change-status" href="#" data-id="${incident.id_incidencias}" data-status="${item.id_status}">
+                                            ${item.nombre}
+                                        </a>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="col">
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <!-- Usuario -->
+                            <p class="card-text mb-0 fw-bold">
+                                ${userName}
+                            </p>
+                            <!-- Fecha de creación -->
+                            <p class="card-text mb-0">
+                                <small class="text-muted">Creation Date: ${incident.fecha_creacion}</small>
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        `;
+            incidentList.appendChild(incidentCard);
+        });
+    }
 
     // Logica del dropdown en el formulario
     function insertPriorities(priorities) {
@@ -349,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function () {
             dropdownLink.textContent = `P${priority.id_prioridad} ` + priority.nombre;
             dropdownLink.dataset.id = priority.id_prioridad;
             dropdownLink.addEventListener('click', (event) => {
-                selectPriority(event, priority);
+                selectPriority(priority);
             });
 
             dropdownItem.appendChild(dropdownLink);
@@ -357,11 +552,53 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
     // Trabaja con la logica del dropdown 
-    function selectPriority(event, priority) {
+    function selectPriority(priority) {
         const priorityButton = document.getElementById('priorityDropdown');
         priorityButton.textContent = priority.nombre;
         priorityButton.dataset.priorityId = priority.id_prioridad;
     }
+
+    // Función para manejar el cambio de rol
+    document.querySelectorAll('.role-select').forEach(select => {
+        select.addEventListener('change', async (event) => {
+            const newRoleId = parseInt(event.target.value); 
+            const userId = parseInt(event.target.dataset.id);
+            const incidentId = parseInt(event.target.dataset.incidentId);
+
+            // Actualiza el rol en el array de watchers o responders según el id
+            const targetArray = (event.target.closest('.col').querySelector('h5').innerText === 'Watchers') ? watchers : responders;
+            const target = targetArray.find(item => item.id_usuario == userId && item.id_incidencia == incidentId);
+
+            if (target) {
+                target.id_rol = newRoleId;
+                console.log(userId, newRoleId, incidentId);
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id_usuario: userId,
+                        id_rol: newRoleId,
+                        id_incidencia: incidentId
+                    }),
+                    credentials: 'include'
+                })
+                if (!response.ok) {
+                    console.error('Error:', response.status);
+                }
+                // Aquí podrías hacer una llamada al servidor para guardar estos cambios, si es necesario.
+            } else {
+                console.error('Usuario no encontrado');
+            }
+        });
+    });
+
+    document.getElementById('search-all').addEventListener('click', async function (event) {
+        event.preventDefault();
+        renderIncidents(incidents);
+    });
 
     // Evgento que se dispara cuando se envia el formulario
     document.getElementById('incident-form').addEventListener('submit', async function (event) {
@@ -412,22 +649,46 @@ document.addEventListener('DOMContentLoaded', function () {
         const modal = bootstrap.Modal.getInstance(document.getElementById('incidentModal'));
         modal.hide();
         loadIncidents();
+    });
+
+    //Evento del select para filtrar por fecha
+    document.getElementById('search-date').addEventListener('change', async function (event) {
+
+        event.preventDefault();
+        const selectDate = event.target.value;
+        console.log(selectDate);
+        renderDateFilter(selectDate);
+
     })
 
+    //Evento del select para filtrar por estado
+    document.getElementById('status-search').addEventListener('change', async function (event) {
+        event.preventDefault();
+        console.log(event.target.value);
+        const statusName = event.target.value;
+        const statusId = status.find(status => status.nombre === statusName)?.id_status;
 
+        renderFilter(statusId);
+    })
 
     document.getElementById('incident-list').addEventListener('click', async function (event) {
         const incidentElement = event.target.closest('[data-id]');
-        const incidentId = incidentElement.getAttribute('data-id');
-        renderWatchersResponders(incidentId);
+        if (incidentElement) {
+            const incidentId = incidentElement.getAttribute('data-id');
+            loadWatchersResponders();
+            loadTimeLine(incidentId);
+            renderWatchersResponders(incidentId);
+            renderTimeLine(timeLine);
+        }
     });
 
-    //Evento que guarda los watchers en la db
+    //Evento que se dispara cuando se selecciona un usuario para añadirlo como watcher o responder
     document.getElementById('info-list').addEventListener('click', async function (event) {
-        if (event.target && event.target.matches('.usuario-watcher')) {
-            const watcherId = parseInt(event.target.dataset.id);
+        if (event.target && event.target.matches('.usuario-watcher, .usuario-responder')) {
+            const id = parseInt(event.target.dataset.id);
             const incidentId = parseInt(event.target.getAttribute('incident-id'));
-            console.log(watcherId, incidentId);
+            const action = event.target.matches('.usuario-watcher') ? 'watcher' : 'responder';
+            console.log(id, incidentId);
 
             try {
                 const response = await fetch(API_URL, {
@@ -437,11 +698,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     },
                     body: JSON.stringify({
                         id_incidencias: incidentId,
-                        id_usuario: watcherId,
-                        action: 'watcher'
+                        id_usuario: id,
+                        action: action
                     }),
                     credentials: 'include'
-                })
+                });
                 if (!response.ok) {
                     console.error('Error:', response.status);
                 }
@@ -449,39 +710,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.error('Error:', error);
             }
         }
-        loadWatchersResponders();
-    })
-
-    //Evento que guarda los responders en la db
-    document.getElementById('info-list').addEventListener('click', async function (event) {
-        if (event.target && event.target.matches('.usuario-responder')) {
-            const responderId = parseInt(event.target.dataset.id);
-            const incidentId = parseInt(event.target.getAttribute('incident-id'));
-            console.log(responderId, incidentId);
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        id_incidencias: incidentId,
-                        id_usuario: responderId,
-                        action: 'responder'
-                    }),
-                    credentials: 'include'
-                })
-                if (!response.ok) {
-                    console.error('Error:', response.status);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
-        loadWatchersResponders();
-    })
-
+    });
 
     //Evento que se dispara cuando para actualizar el estado de una incidencia
     document.getElementById('incident-list').addEventListener('click', async function (event) {
@@ -541,4 +770,5 @@ document.addEventListener('DOMContentLoaded', function () {
     loadWatchersResponders();
     loadRoles();
     loadRolUser();
+    loadTimeLine();
 });

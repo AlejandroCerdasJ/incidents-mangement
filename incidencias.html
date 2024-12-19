@@ -42,7 +42,7 @@
         <h1 class="text-left mb-4 text-uppercase fw-bold">Incidents</h1>
 
         <div class="d-flex justify-content-end mb-4">
-            <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
+            <button class="btn btn-info d-flex align-items-center gap-2 fw-bold" data-bs-toggle="modal"
                 data-bs-target="#incidentModal">
                 <i class="bi bi-plus-circle"></i>
                 Create Incident
@@ -58,14 +58,14 @@
                             <h4>Search Incident</h4>
                             <div class="mb-3">
                                 <button class="btn btn-primary" data-bs-toggle="#"
-                                    data-bs-target="#incidentModal">All</button>
+                                    data-bs-target="#incidentModal" id="search-all">All</button>
                             </div>
                             <div class="mb-3">
                                 <h5>Status</h5>
                                 <select id="status-search">
-                                    <option value="open">Open</option>
-                                    <option value="close">Close</option>
-                                    <option value="resolved">Resolved</option>
+                                    <option value="Open">Open</option>
+                                    <option value="Close">Close</option>
+                                    <option value="Resolved">Resolved</option>
                                 </select>
                             </div>
                             <div class="mb-3">
@@ -78,7 +78,7 @@
                     </div>
                     <!--Aqui se muestran los watchers y los responders-->
                     <div class="col mb-4">
-                        <h4>Incident Info</h4>
+                        <h4 class="mb-3 text-decoration-underline">Incident Info</h4>
                         <div class="row" id="info-list">
                             <div class="col mb-4">
                                 <!-- Mostrar aqui las incidentes info -->
@@ -96,8 +96,10 @@
                 </div>
 
                 <!--Aqui va el timeline-->
-                <div class="col border p-3 shadow-sm mb-4 timeline">
-                    <h4>Timeline</h4>
+                <div class="col border p-3 shadow-sm mb-4" id="timeline">
+                    <h4 class="mb-3 text-decoration-underline">Timeline</h4>
+                    <div class=" timeline-container" id="timeline-container">
+                        
                 </div>
 
             </div>
